@@ -67,6 +67,10 @@ export type Dutch = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     },
@@ -99,12 +103,63 @@ export type Dutch = {
           "isSigner": false
         }
       ],
-      "args": [
+      "args": []
+    },
+    {
+      "name": "bid",
+      "accounts": [
         {
-          "name": "bump",
-          "type": "u8"
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "auctionAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bidderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auctionOwner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -132,9 +187,30 @@ export type Dutch = {
           {
             "name": "endingTime",
             "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "MismatchedOwners",
+      "msg": "auction_owner does not match auction_account authority"
+    },
+    {
+      "code": 6001,
+      "name": "AuctionEarly",
+      "msg": "Auction has not yet begun"
+    },
+    {
+      "code": 6002,
+      "name": "AuctionLate",
+      "msg": "Auction has concluded"
     }
   ]
 };
@@ -208,6 +284,10 @@ export const IDL: Dutch = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     },
@@ -240,12 +320,63 @@ export const IDL: Dutch = {
           "isSigner": false
         }
       ],
-      "args": [
+      "args": []
+    },
+    {
+      "name": "bid",
+      "accounts": [
         {
-          "name": "bump",
-          "type": "u8"
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "auctionAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bidderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auctionOwner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
         }
-      ]
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -273,9 +404,30 @@ export const IDL: Dutch = {
           {
             "name": "endingTime",
             "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "MismatchedOwners",
+      "msg": "auction_owner does not match auction_account authority"
+    },
+    {
+      "code": 6001,
+      "name": "AuctionEarly",
+      "msg": "Auction has not yet begun"
+    },
+    {
+      "code": 6002,
+      "name": "AuctionLate",
+      "msg": "Auction has concluded"
     }
   ]
 };

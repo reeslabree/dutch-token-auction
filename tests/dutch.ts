@@ -2,15 +2,16 @@ import * as anchor from '@project-serum/anchor';
 import * as spl from '@solana/spl-token';
 import { Program } from '@project-serum/anchor';
 import { Dutch } from '../target/types/dutch';
-import { PublicKey } from "@solana/web3.js"
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import assert from 'assert'
-import { mintTo, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 describe('dutch', () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const SYSTEM_PROGRAM_ID = anchor.web3.SystemProgram.programId;
   const SYSVAR_RENT_PUBKEY = anchor.web3.SYSVAR_RENT_PUBKEY;
+  const MARGIN_OF_ERROR = 1.01;
 
   const program = anchor.workspace.Dutch as Program<Dutch>;
 
@@ -27,34 +28,29 @@ describe('dutch', () => {
     return programAddress;
   }
 
-  const deriveEscrowTokenAccountPDA = async (mint: PublicKey) => {
-    const programAddress = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("escrow"), mint.toBuffer()],
-      program.programId
-    );
-    return programAddress;
+  const delay = (milliseconds : number) => {
+    return new Promise(resolve => setTimeout( resolve, milliseconds));
   }
 
   it('Initialization', async () => {
-    /* INITIALIZE 2 WALLETS WITH 2.5 SOL */
+    /* INITIALIZE 2 WALLETS WITH 25 SOL */
     const signature1 = await program.provider.connection.requestAirdrop(
       wallet1.publicKey,
-      25000000000
+      25 * LAMPORTS_PER_SOL
     );
 
-    // assert(balance1 === 2)
     await program.provider.connection.confirmTransaction(signature1);
 
     const signature2 = await program.provider.connection.requestAirdrop(
       wallet2.publicKey,
-      25000000000
+      25 * LAMPORTS_PER_SOL
     );
     await program.provider.connection.confirmTransaction(signature2);
 
     const balance1 = await program.provider.connection.getBalance(wallet1.publicKey)
-    assert(balance1 === 25000000000)
+    assert(balance1 === 25000000000, 'wallet1 incorrectly accredited')
     const balance2 = await program.provider.connection.getBalance(wallet2.publicKey)
-    assert(balance2 === 25000000000)
+    assert(balance2 === 25000000000, 'wallet2 incorrectly accredited')
 
     /* CREATE A TOKEN AND MINT 20 TO WALLET 1 */
     mint = await spl.createMint(
@@ -105,12 +101,13 @@ describe('dutch', () => {
       true
     )
 
-    const currentTime = (Date.now() / 1000).toFixed(0);
+    const currentTime = Math.round((Date.now() / 1000));;
     await program.methods.initializeAuction(
       new anchor.BN(currentTime),              // now
       new anchor.BN(currentTime + 3600),       // 1 hour from now
       1000000000,                              // 1 SOL starting price
       new anchor.BN(1),                        // 1 token
+      auctionAccountPDABump,
     ).accounts({
       authority: wallet1.publicKey,
       auctionAccount: auctionAccountPDA,
@@ -137,6 +134,8 @@ describe('dutch', () => {
       'Incorrect Starting Time')
     assert(account.endingTime.toNumber() == (currentTime + 3600), 
       'Incorrect Ending Time')
+    assert(account.bump == auctionAccountPDABump, 
+      'Incorrect Bump')
 
     // Check that the owner has been debited 1 token
     const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
@@ -171,13 +170,14 @@ describe('dutch', () => {
       true
     )
 
-    await program.methods.closeAuction(auctionAccountPDABump).accounts({
+    await program.methods.closeAuction().accounts({
       authority: wallet1.publicKey,
       auctionAccount: auctionAccountPDA,
       holderTokenAccount: wallet1TokenAccount.address,
       escrowTokenAccount: escrowTokenAccount.address,
       tokenProgram: TOKEN_PROGRAM_ID,
-    }).signers([wallet1]).rpc()
+    }).signers([wallet1])
+    .rpc()
 
     /* ASSERTIONS BELOW */
     // Check that the owner has received their token back
@@ -194,7 +194,112 @@ describe('dutch', () => {
     // Ensure that the auction token account is closed
     const auctionTokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
       auctionAccountPDA, 
-      {programId: spl.TOKEN_PROGRAM_ID}
+      {programId: spl.TOKEN_PROGRAM_ID, mint: mint}
+    )
+    assert(auctionTokenAccounts.value.length === 0, 
+      'Auction token account is not closed')
+
+    // Ensure that the auction account is now closed
+    try {
+      await program.account.auctionAccount.fetch(auctionAccountPDA);
+      assert(false, 'Account does exist')
+    } catch (e) {
+      assert(e.message === ('Account does not exist ' + auctionAccountPDA.toBase58()))
+    }
+  })
+
+  it('Can bid on an auction', async () => {
+    const [ auctionAccountPDA, auctionAccountPDABump ] = await deriveAuctionAccountPDA(wallet1.publicKey)
+    const escrowTokenAccount = await getAssociatedTokenAddress(
+      mint,
+      auctionAccountPDA,
+      true,
+    )
+
+    const currentTime = Math.round((Date.now() / 1000));
+    const duration = 60; // 1 minute from now
+
+    await program.methods.initializeAuction(
+      new anchor.BN(currentTime),              // now
+      new anchor.BN(currentTime + duration),  
+      1 * LAMPORTS_PER_SOL,                    // 1 SOL starting price
+      new anchor.BN(1),                        // 1 token
+      auctionAccountPDABump,
+    ).accounts({
+      authority: wallet1.publicKey,
+      auctionAccount: auctionAccountPDA,
+      escrowTokenAccount: escrowTokenAccount,
+      holderTokenAccount: wallet1TokenAccount.address,
+      mint: mint,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_ID,
+      rent: SYSVAR_RENT_PUBKEY,
+    },
+    ).signers([wallet1])
+    .rpc();
+
+    const bidderTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      wallet2,
+      mint,
+      wallet2.publicKey,
+    )
+
+    const balance1Before = await program.provider.connection.getBalance(wallet1.publicKey)
+    const balance2Before = await program.provider.connection.getBalance(wallet2.publicKey)
+    const wait = 15;
+    await delay(wait * 1000); 
+
+    await program.methods.bid()
+      .accounts({
+        authority: wallet2.publicKey,
+        auctionAccount: auctionAccountPDA,
+        escrowTokenAccount: escrowTokenAccount,
+        bidderTokenAccount: bidderTokenAccount.address,
+        auctionOwner: wallet1.publicKey,
+        mint: mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY
+      })
+      .signers([wallet2])
+      .rpc()
+
+
+    /* ASSERTIONS BELOW */
+    // Check that the adequate payment was made from wallet2 to wallet1
+    const endTime = currentTime + wait;
+    const expectedCost = (LAMPORTS_PER_SOL) - (((endTime - currentTime) / duration) * LAMPORTS_PER_SOL)
+
+    const balance1After = await program.provider.connection.getBalance(wallet1.publicKey)
+    const balance2After = await program.provider.connection.getBalance(wallet2.publicKey)
+    
+    console.log("Expected Cost (lamports):    ", expectedCost,
+              "\nWallet 1 Received:           ", (balance1After - balance1Before),
+              "\nWallet 2 Gave:               ", (balance2Before - balance2After),
+              "\nApproved Margin of Error:    ", `+/-${Math.round((MARGIN_OF_ERROR - 1)*100)}%`,
+              "\nWallet 1 Error:              ", Math.abs((expectedCost - (balance1After - balance1Before)) / expectedCost),
+              "\nWallet 1 Error:              ", Math.abs((expectedCost - (balance2Before - balance2After)) / expectedCost,))
+    assert((balance1After - balance1Before) <= expectedCost*MARGIN_OF_ERROR, 'Wallet 1 did not receive the proper funds')
+    assert((balance2Before - balance2After) <= expectedCost*MARGIN_OF_ERROR, 'Wallet 2 was not debited the proper amount')
+
+    // Check that wallet2 received the token
+    const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      wallet2.publicKey, 
+      {programId: spl.TOKEN_PROGRAM_ID, mint: mint}
+    )
+    const decodedTokenAccounts = tokenAccounts.value.map((account) => {
+      return spl.AccountLayout.decode(account.account.data)
+    })
+    assert(decodedTokenAccounts[0].amount.toString() === '1', 
+      'Purchaser did not receive the token')
+
+    // Ensure that the auction token account is closed
+    const auctionTokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      auctionAccountPDA, 
+      {programId: spl.TOKEN_PROGRAM_ID, mint: mint}
     )
     assert(auctionTokenAccounts.value.length === 0, 
       'Auction token account is not closed')
