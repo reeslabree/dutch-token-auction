@@ -1,0 +1,15 @@
+Streaming transaction logs mentioning Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS. Confirmed commitment
+Transaction executed in slot 10:
+  Signature: RNzWj6muTjsFYdwdTboa13F6tVWbbjtJKimST2Boerv3sPK2VDPRC2c6QXEqAwUPfvP2dKPw6ZxFXsmjkdUotWo
+  Status: Ok
+  Log Messages:
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS invoke [1]
+    Program log: Instruction: InitializeAuction
+    Program 11111111111111111111111111111111 invoke [2]
+    Program 11111111111111111111111111111111 success
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+    Program log: Instruction: Transfer
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3121 of 161316 compute units
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS consumed 43959 of 200000 compute units
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS success
