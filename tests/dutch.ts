@@ -4,7 +4,7 @@ import { Program } from '@project-serum/anchor';
 import { Dutch } from '../target/types/dutch';
 import { PublicKey } from "@solana/web3.js"
 import assert from 'assert'
-import { mintTo } from '@solana/spl-token';
+import { mintTo, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 describe('dutch', () => {
   // Configure the client to use the local cluster.
@@ -85,7 +85,10 @@ describe('dutch', () => {
     assert(supply.value.decimals === 0)
 
     // check that wallet1 holds all the tokens
-    const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(wallet1.publicKey, {programId: spl.TOKEN_PROGRAM_ID})
+    const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      wallet1.publicKey, 
+      {programId: spl.TOKEN_PROGRAM_ID}
+    )
     const decodedTokenAccounts = tokenAccounts.value.map((account) => {
       return spl.AccountLayout.decode(account.account.data)
     })
@@ -102,11 +105,11 @@ describe('dutch', () => {
       true
     )
 
-    const currentTime = Date.now() / 1000;
+    const currentTime = (Date.now() / 1000).toFixed(0);
     await program.methods.initializeAuction(
       new anchor.BN(currentTime),              // now
       new anchor.BN(currentTime + 3600),       // 1 hour from now
-      new anchor.BN(1),                        // 1 SOL starting price
+      1000000000,                              // 1 SOL starting price
       new anchor.BN(1),                        // 1 token
     ).accounts({
       authority: wallet1.publicKey,
@@ -120,5 +123,88 @@ describe('dutch', () => {
       rent: SYSVAR_RENT_PUBKEY,
     },
     ).signers([wallet1]).rpc();
+
+    /* ASSERTIONS BELOW */
+    // Make sure that the values stored on the auction account are correct
+    const account = await program.account.auctionAccount.fetch(auctionAccountPDA)
+    assert(account.amount.toNumber() === 1, 
+      'Incorrect Token Amount')
+    assert(account.authority.toBase58() === wallet1.publicKey.toBase58(), 
+      'Incorrect Authority')
+    assert(account.startingPrice === 1000000000, 
+      'Incorrect Starting Price')
+    assert(account.startingTime.toNumber() == currentTime, 
+      'Incorrect Starting Time')
+    assert(account.endingTime.toNumber() == (currentTime + 3600), 
+      'Incorrect Ending Time')
+
+    // Check that the owner has been debited 1 token
+    const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      wallet1.publicKey, 
+      {programId: spl.TOKEN_PROGRAM_ID}
+    )
+    const decodedOwnerTokenAccounts = tokenAccounts.value.map((account) => {
+      return spl.AccountLayout.decode(account.account.data)
+    })
+    assert(decodedOwnerTokenAccounts[0].amount.toString() === '19', 
+      'Owner was not debited 1 token')
+
+    // Ensure that the auction account owns a token account holding 1 token
+    const auctionTokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      auctionAccountPDA, 
+      {programId: spl.TOKEN_PROGRAM_ID}
+    )
+    const decodedTokenAccounts = auctionTokenAccounts.value.map((account) => {
+      return spl.AccountLayout.decode(account.account.data)
+    })
+    assert(decodedTokenAccounts[0].amount.toString() === '1',
+      'Auction token account isn\'t holding the proper amount of tokens')
   });
+
+  it('Auction instantiator can close the auction.', async () => {
+    const [ auctionAccountPDA, auctionAccountPDABump ] = await deriveAuctionAccountPDA(wallet1.publicKey)
+    const escrowTokenAccount = await spl.getOrCreateAssociatedTokenAccount(
+      program.provider.connection,
+      wallet1,
+      mint,
+      auctionAccountPDA,
+      true
+    )
+
+    await program.methods.closeAuction(auctionAccountPDABump).accounts({
+      authority: wallet1.publicKey,
+      auctionAccount: auctionAccountPDA,
+      holderTokenAccount: wallet1TokenAccount.address,
+      escrowTokenAccount: escrowTokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    }).signers([wallet1]).rpc()
+
+    /* ASSERTIONS BELOW */
+    // Check that the owner has received their token back
+    const tokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      wallet1.publicKey, 
+      {programId: spl.TOKEN_PROGRAM_ID}
+    )
+    const decodedTokenAccounts = tokenAccounts.value.map((account) => {
+      return spl.AccountLayout.decode(account.account.data)
+    })
+    assert(decodedTokenAccounts[0].amount.toString() === '20', 
+      'Owner did not receive their token back')
+
+    // Ensure that the auction token account is closed
+    const auctionTokenAccounts = await program.provider.connection.getTokenAccountsByOwner(
+      auctionAccountPDA, 
+      {programId: spl.TOKEN_PROGRAM_ID}
+    )
+    assert(auctionTokenAccounts.value.length === 0, 
+      'Auction token account is not closed')
+
+    // Ensure that the auction account is now closed
+    try {
+      await program.account.auctionAccount.fetch(auctionAccountPDA);
+      assert(false, 'Account does exist')
+    } catch (e) {
+      assert(e.message === ('Account does not exist ' + auctionAccountPDA.toBase58()))
+    }
+  })
 });

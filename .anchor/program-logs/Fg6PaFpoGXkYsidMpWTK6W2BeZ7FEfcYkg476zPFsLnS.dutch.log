@@ -1,6 +1,6 @@
 Streaming transaction logs mentioning Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS. Confirmed commitment
-Transaction executed in slot 10:
-  Signature: RNzWj6muTjsFYdwdTboa13F6tVWbbjtJKimST2Boerv3sPK2VDPRC2c6QXEqAwUPfvP2dKPw6ZxFXsmjkdUotWo
+Transaction executed in slot 11:
+  Signature: 3LV26TQHeToRAfWB7ESeu8C7X3A7aWGVgTvinZr6HncN6ZgXZm3jVmNY4un94hvw1Le7R2YvrE3n9bQSUnaFYc1C
   Status: Ok
   Log Messages:
     Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS invoke [1]
@@ -9,7 +9,23 @@ Transaction executed in slot 10:
     Program 11111111111111111111111111111111 success
     Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
     Program log: Instruction: Transfer
-    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3121 of 161316 compute units
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3121 of 165781 compute units
     Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
-    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS consumed 43959 of 200000 compute units
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS consumed 39463 of 200000 compute units
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS success
+Transaction executed in slot 12:
+  Signature: 3YoKaymmesSNcRrtRjjKVGYKzBTJB4wsTkFoztYuWNfDVKrvmRtTdoGUjS5FNiQ3VgyRuheGNF5VmkhwYBYyid8K
+  Status: Ok
+  Log Messages:
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS invoke [1]
+    Program log: Instruction: CloseAuction
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+    Program log: Instruction: Transfer
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 3121 of 182475 compute units
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+    Program log: Instruction: CloseAccount
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2297 of 173747 compute units
+    Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+    Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS consumed 30827 of 200000 compute units
     Program Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS success
