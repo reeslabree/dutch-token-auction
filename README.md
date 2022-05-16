@@ -1,11 +1,12 @@
 # Dutch Token Auction
 ### Install Instructions
-Clone the repository and run `yarn` to install `node_modules`.
+Clone the repository and run `yarn` to install `node_modules`. Ensure `anchor --version` is `0.24.2`.
 
 ### General Information
 This program is an Anchor implementation of the Dutch Auction, where the auction is instantiated with a start date, end date and starting price. The current price decreases linearly over the duration of the auction from the starting price to zero. This implementation auctions a token (or tokens). 
 
 ### Test Suite
+Run tests using `anchor test` from inside the root directory.
 | Test | Purpose | Notes |
 |------|---------|-------|
 |Initialization | Establishes two wallets, funds them, and mints tokens to `wallet1`. These tokens are the 'assets' that will be auctioned. | Isn't a test, rather establishes the testing environment.|
