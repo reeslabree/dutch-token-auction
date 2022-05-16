@@ -15,7 +15,7 @@ describe("dutch", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
   const SYSTEM_PROGRAM_ID = anchor.web3.SystemProgram.programId;
   const SYSVAR_RENT_PUBKEY = anchor.web3.SYSVAR_RENT_PUBKEY;
-  const MARGIN_OF_ERROR = 1.01;
+  const MARGIN_OF_ERROR = 1.05;
 
   const program = anchor.workspace.Dutch as Program<Dutch>;
 
