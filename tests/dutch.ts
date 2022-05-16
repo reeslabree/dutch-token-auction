@@ -338,7 +338,7 @@ describe("dutch", () => {
       Math.abs(
         (expectedCost - (balance1After - balance1Before)) / expectedCost
       ),
-      "\nWallet 1 Error:              ",
+      "\nWallet 2 Error:              ",
       Math.abs((expectedCost - (balance2Before - balance2After)) / expectedCost)
     );
     assert(
