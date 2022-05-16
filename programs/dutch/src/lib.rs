@@ -34,6 +34,17 @@ pub mod dutch {
         amount: u64,
         bump: u8,
     ) -> Result<()> {
+        // check that start time precedes end time
+        if starting_time >= ending_time {
+            return Err(ErrorCode::InvalidDateRange.into());
+        }
+
+        // check that the current time is now or in the future
+        let current_time = Clock::get()?.unix_timestamp;
+        if current_time > starting_time {
+            return Err(ErrorCode::InvalidStartDate.into());
+        }
+
         // set the auction account data
         let auction_account: &mut Account<AuctionAccount> = &mut ctx.accounts.auction_account; 
         auction_account.authority = ctx.accounts.authority.key();
@@ -84,16 +95,19 @@ pub mod dutch {
     ) -> Result<()> {
         // compute the current price based on the time
         let current_time = Clock::get()?.unix_timestamp;
+
+        // check that the auction is in session
+        if current_time < ctx.accounts.auction_account.starting_time {
+            return Err(ErrorCode::AuctionEarly.into());
+        }
+        if current_time > ctx.accounts.auction_account.ending_time {
+            return Err(ErrorCode::AuctionLate.into());
+        }
+
         let starting_price = ctx.accounts.auction_account.starting_price as f64;
         let elapsed_time = (current_time - ctx.accounts.auction_account.starting_time) as f64;
         let duration = (ctx.accounts.auction_account.ending_time - ctx.accounts.auction_account.starting_time) as f64;
         let price = starting_price - ((elapsed_time * starting_price) / duration);
-        msg!("starting time: {:}", ctx.accounts.auction_account.starting_time);
-        msg!("current time: {:}", current_time);
-        msg!("elapsed time: {:}", elapsed_time);
-        msg!("starting price: {:}", starting_price);
-        msg!("duration: {:}", duration);
-        msg!("price: {:}", price);
 
         // transfer lamports to the owner
         invoke(
@@ -166,7 +180,10 @@ pub struct InitializeAuction<'info> {
 pub struct CloseAuction<'info> {
     #[account(mut)]
     authority: Signer<'info>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = authority.key() == auction_account.authority @ErrorCode::ProxyClose
+    )]
     auction_account: Account<'info, AuctionAccount>,
     #[account(mut)]
     holder_token_account: Account<'info, TokenAccount>,
@@ -177,7 +194,9 @@ pub struct CloseAuction<'info> {
 
 #[derive(Accounts, Clone)]
 pub struct Bid<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+    )]
     authority: Signer<'info>,
     #[account(mut)]
     auction_account: Account<'info, AuctionAccount>,
@@ -289,10 +308,16 @@ impl AuctionAccount {
 
 #[error_code]
 pub enum ErrorCode {
-    #[msg("auction_owner does not match auction_account authority")]
-    MismatchedOwners,
+    #[msg("Close auction can only be called by the auction authority")]
+    ProxyClose,
     #[msg("Auction has not yet begun")]
     AuctionEarly,
     #[msg("Auction has concluded")]
     AuctionLate,
+    #[msg("Start date must occur before end date")]
+    InvalidDateRange,
+    #[msg("Start date must occur in the future")]
+    InvalidStartDate,
+    #[msg("Auction owner must match auction authority")]
+    MismatchedOwners,
 }

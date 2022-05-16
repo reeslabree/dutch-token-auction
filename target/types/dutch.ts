@@ -199,8 +199,8 @@ export type Dutch = {
   "errors": [
     {
       "code": 6000,
-      "name": "MismatchedOwners",
-      "msg": "auction_owner does not match auction_account authority"
+      "name": "ProxyClose",
+      "msg": "Close auction can only be called by the auction authority"
     },
     {
       "code": 6001,
@@ -211,6 +211,21 @@ export type Dutch = {
       "code": 6002,
       "name": "AuctionLate",
       "msg": "Auction has concluded"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidDateRange",
+      "msg": "Start date must occur before end date"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidStartDate",
+      "msg": "Start date must occur in the future"
+    },
+    {
+      "code": 6005,
+      "name": "MismatchedOwners",
+      "msg": "Auction owner must match auction authority"
     }
   ]
 };
@@ -416,8 +431,8 @@ export const IDL: Dutch = {
   "errors": [
     {
       "code": 6000,
-      "name": "MismatchedOwners",
-      "msg": "auction_owner does not match auction_account authority"
+      "name": "ProxyClose",
+      "msg": "Close auction can only be called by the auction authority"
     },
     {
       "code": 6001,
@@ -428,6 +443,21 @@ export const IDL: Dutch = {
       "code": 6002,
       "name": "AuctionLate",
       "msg": "Auction has concluded"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidDateRange",
+      "msg": "Start date must occur before end date"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidStartDate",
+      "msg": "Start date must occur in the future"
+    },
+    {
+      "code": 6005,
+      "name": "MismatchedOwners",
+      "msg": "Auction owner must match auction authority"
     }
   ]
 };
