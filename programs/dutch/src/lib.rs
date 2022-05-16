@@ -291,7 +291,7 @@ pub struct AuctionAccount {
 const DISCRIMINATOR_LENGTH: usize = 8;
 const PUBLIC_KEY_LENGTH: usize = 32;
 const TIMESTAMP_LENGTH: usize = 8;
-const U8_LENGTH: usize = 8;
+const U8_LENGTH: usize = 1;
 const U32_LENGTH: usize = 4;
 const U64_LENGTH: usize = 8;
 
@@ -299,10 +299,10 @@ impl AuctionAccount {
     const LEN: usize = 
         DISCRIMINATOR_LENGTH    // discriminator
         + PUBLIC_KEY_LENGTH     // authority
+        + U64_LENGTH            // amount
+        + U32_LENGTH            // starting price
         + TIMESTAMP_LENGTH      // starting time
         + TIMESTAMP_LENGTH      // ending time
-        + U32_LENGTH            // starting price
-        + U64_LENGTH            // amount
         + U8_LENGTH;            // bump
 }
 
