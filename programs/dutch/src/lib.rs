@@ -47,7 +47,8 @@ pub mod dutch {
 
         // set the auction account data
         let auction_account: &mut Account<AuctionAccount> = &mut ctx.accounts.auction_account; 
-        auction_account.authority = ctx.accounts.authority.key();
+        auction_account.authority = ctx.accounts.authority.key().clone();
+        auction_account.escrow_account = ctx.accounts.escrow_token_account.key();
         auction_account.starting_price = start_price;
         auction_account.starting_time = starting_time;
         auction_account.ending_time = ending_time;
@@ -200,7 +201,10 @@ pub struct Bid<'info> {
     authority: Signer<'info>,
     #[account(mut)]
     auction_account: Account<'info, AuctionAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = escrow_token_account.key() == auction_account.escrow_account @ErrorCode::InvalidEscrow,
+    )]
     escrow_token_account: Account<'info, TokenAccount>,
     #[account(
         init_if_needed,
@@ -282,6 +286,7 @@ impl<'info> Bid<'info> {
 pub struct AuctionAccount {
     authority: Pubkey,
     amount: u64,
+    escrow_account: Pubkey,
     starting_price: u32,
     starting_time: i64,
     ending_time: i64,
@@ -298,6 +303,7 @@ const U64_LENGTH: usize = 8;
 impl AuctionAccount {
     const LEN: usize = 
         DISCRIMINATOR_LENGTH    // discriminator
+        + PUBLIC_KEY_LENGTH     // authority
         + PUBLIC_KEY_LENGTH     // authority
         + U64_LENGTH            // amount
         + U32_LENGTH            // starting price
@@ -320,4 +326,6 @@ pub enum ErrorCode {
     InvalidStartDate,
     #[msg("Auction owner must match auction authority")]
     MismatchedOwners,
+    #[msg("Incorrect escrow token account")]
+    InvalidEscrow,
 }
